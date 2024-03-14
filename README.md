@@ -3,7 +3,7 @@
 something that is not easy to achieve with tools like `grep` and `less`.
 
 **Colorexp**
-- uses the Go regexp package format, as documented [here](https://pkg.go.dev/regexp/syntax).
+- uses the Go regexp format, as documented [here](https://pkg.go.dev/regexp/syntax).
 - supports overlapping matches (the color of the first matching pattern will be used)
 
 # Usage
