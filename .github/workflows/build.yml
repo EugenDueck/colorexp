@@ -1,0 +1,34 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [1.17.x]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Extract project version
+        id: project_version
+        run: echo "::set-output name=version::$(grep 'const version =' colorexp.go | cut -d '"' -f 2)"
+      - name: Extract commit hash
+        id: git_commit
+        run: echo "::set-output name=sha::$(git rev-parse --short HEAD)"
+      - name: Build
+        run: |
+          env GOOS=${{ matrix.os }} GOARCH=amd64 go build -o colorexp-${{ matrix.os }}-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp.go
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: colorexp-${{ matrix.os }}-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
+          path: colorexp-${{ matrix.os }}-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
