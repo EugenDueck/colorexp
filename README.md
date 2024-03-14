@@ -17,6 +17,17 @@ Usage: colorexp [options] patterns...
 ## Example
 ![Example](example.png)
 
+# Installation
+
+## Homebrew on MacOS
+```sh
+brew tap EugenDueck/tap https://github.com/EugenDueck/homebrew-tap
+brew install colorexp
+```
+
+## All OSes
+- Download a Release from https://github.com/EugenDueck/colorexp/releases
+
 # Build
 ```sh
 go build colorexp.go
