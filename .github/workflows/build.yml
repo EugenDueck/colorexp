@@ -31,9 +31,7 @@ jobs:
       # Build Linux
       - name: Build Linux
         run: |
-          env GOOS=linux GOARCH=amd64 go build -o colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp.go
-          mv -f colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp
-          chmod a+x colorexp
+          env GOOS=linux GOARCH=amd64 go build -o colorexp colorexp.go
           tar -czvf colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.tar.gz colorexp
       - name: Upload Linux artifact
         if: github.event_name == 'push'
@@ -45,8 +43,7 @@ jobs:
       # Build Darwin
       - name: Build Darwin
         run: |
-          env GOOS=darwin GOARCH=amd64 go build -o colorexp-darwin-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp.go
-          mv -f colorexp-darwin-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp
+          env GOOS=darwin GOARCH=amd64 go build -o colorexp colorexp.go
           chmod a+x colorexp
           tar -czvf colorexp-darwin-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.tar.gz colorexp
       - name: Upload Darwin artifact
@@ -59,8 +56,7 @@ jobs:
       # Build Windows
       - name: Build Windows
         run: |
-          env GOOS=windows GOARCH=amd64 go build -o colorexp-windows-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp.go
-          mv -f colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp.exe
+          env GOOS=windows GOARCH=amd64 go build -o colorexp.exe colorexp.go
           zip colorexp-windows-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.zip colorexp.exe
       - name: Upload Windows artifact
         if: github.event_name == 'push'
