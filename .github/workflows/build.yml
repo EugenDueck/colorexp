@@ -20,10 +20,10 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Extract project version
         id: project_version
-        run: echo "::set-output name=version::$(grep 'const version =' colorexp.go | cut -d '"' -f 2)"
+        run: echo "version=$(grep 'const version =' colorexp.go | cut -d '"' -f 2)" >> $GITHUB_STATE
       - name: Extract commit hash
         id: git_commit
-        run: echo "::set-output name=sha::$(git rev-parse --short HEAD)"
+        run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       - name: Download dependencies
         run: go mod tidy
       - name: Build
