@@ -32,18 +32,24 @@ jobs:
       - name: Build Linux
         run: |
           env GOOS=linux GOARCH=amd64 go build -o colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp.go
+          mv -f colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp
+          chmod a+x colorexp
+          tar -czvf colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.tar.gz colorexp
       - name: Upload Linux artifact
         if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
-          name: colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
-          path: colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
+          name: colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.tar.gz
+          path: colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.tar.gz
 
       # Build Darwin
       - name: Build Darwin
         run: |
           env GOOS=darwin GOARCH=amd64 go build -o colorexp-darwin-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp.go
-      - name: Upload Linux artifact
+          mv -f colorexp-darwin-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp
+          chmod a+x colorexp
+          tar -czvf colorexp-darwin-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.tar.gz colorexp
+      - name: Upload Darwin artifact
         if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
@@ -54,12 +60,14 @@ jobs:
       - name: Build Windows
         run: |
           env GOOS=windows GOARCH=amd64 go build -o colorexp-windows-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp.go
+          mv -f colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp.exe
+          zip colorexp-windows-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.zip colorexp.exe
       - name: Upload Windows artifact
         if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
-          name: colorexp-windows-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
-          path: colorexp-windows-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
+          name: colorexp-windows-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.zip
+          path: colorexp-windows-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.zip
 
       # Create a GitHub release
       - name: Create Release
@@ -74,6 +82,7 @@ jobs:
           draft: false
           prerelease: false
 
+
       # Upload release asset for Linux
       - name: Upload Release Asset Linux
         if: github.event_name == 'push'
@@ -82,8 +91,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
-          asset_name: colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
+          asset_path: ./colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.tar.gz
+          asset_name: colorexp-linux-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.tar.gz
           asset_content_type: application/octet-stream
 
       # Upload release asset for Darwin
@@ -94,8 +103,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./colorexp-darwin-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
-          asset_name: colorexp-darwin-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
+          asset_path: ./colorexp-darwin-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.tar.gz
+          asset_name: colorexp-darwin-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.tar.gz
           asset_content_type: application/octet-stream
 
       # Upload release asset for Windows
@@ -106,7 +115,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./colorexp-windows-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
-          asset_name: colorexp-windows-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
+          asset_path: ./colorexp-windows-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.zip
+          asset_name: colorexp-windows-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}.zip
           asset_content_type: application/octet-stream
-
