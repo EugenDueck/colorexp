@@ -8,6 +8,8 @@ import (
 	"regexp"
 )
 
+const version = "1.0.0"
+
 var foregroundColors = []string{
 	//"\033[30m", // Black
 	"\033[31m", // Red
@@ -119,26 +121,33 @@ func incRanges(ranges []rangeWithID, inc int) {
 }
 
 func printUsage() {
-	_, _ = fmt.Printf("Usage: %s [options] patterns...\n", os.Args[0])
+	fmt.Println("Usage: colorexp [options] patterns...")
 	pflag.PrintDefaults()
 }
 
 func main() {
 	var (
 		fixedStrings bool
-		helpFlag     bool
+		showHelp     bool
 		highlight    bool
 		ignoreCase   bool
+		showVersion  bool
 	)
 
-	pflag.BoolVarP(&fixedStrings, "fixed-strings", "F", false, "Don't interpret regular expression metacharacters.")
-	pflag.BoolVarP(&helpFlag, "help", "h", false, "Display this help and exit.")
-	pflag.BoolVarP(&highlight, "highlight", "H", false, "Color by changing the background color.")
+	pflag.BoolVarP(&fixedStrings, "fixed-strings", "F", false, "Do not interpret regular expression metacharacters.")
+	pflag.BoolVarP(&showHelp, "help", "h", false, "Display this help and exit.")
+	pflag.BoolVarP(&highlight, "highlight", "H", false, "Color by changing the background color. The default is to change the foreground color.")
 	pflag.BoolVarP(&ignoreCase, "ignore-case", "i", false, "Perform case insensitive matching.")
+	pflag.BoolVarP(&showVersion, "version", "V", false, "Display version information and exit.")
 
 	pflag.Parse()
 
-	if helpFlag {
+	if showVersion {
+		fmt.Printf("colorexp %v\n", version)
+		os.Exit(0)
+	}
+
+	if showHelp {
 		printUsage()
 		os.Exit(0)
 	}
