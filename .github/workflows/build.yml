@@ -15,7 +15,7 @@ jobs:
       # Extract version information
       - name: Extract project version
         id: project_version
-        run: echo "version=$(grep 'const version =' colorexp.go | cut -d '"' -f 2)" >> $GITHUB_STATE
+        run: echo "version=$(grep 'const version =' colorexp.go | cut -d '"' -f 2)" >> $GITHUB_OUTPUT
       - name: Extract commit hash
         id: git_commit
         run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
