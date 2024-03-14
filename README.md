@@ -10,7 +10,6 @@ something that is not easy to achieve with tools like `grep` and `less`.
 ```
 Usage: colorexp [options] patterns...
 -F, --fixed-strings   Don't interpret regular expression metacharacters.
--h, --help            Display this help and exit.
 -H, --highlight       Color by changing the background color.
 -i, --ignore-case     Perform case insensitive matching.
 ```
