@@ -13,7 +13,10 @@ jobs:
         go-version: [1.21.x]
         os: [linux, darwin, windows]
     steps:
+      # Check out
       - uses: actions/checkout@v4
+
+      # Prepare build
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
@@ -26,6 +29,8 @@ jobs:
         run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       - name: Download dependencies
         run: go mod tidy
+
+      # Build
       - name: Build
         run: |
           env GOOS=${{ matrix.os }} GOARCH=amd64 go build -o colorexp-${{ matrix.os }}-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }} colorexp.go
@@ -35,3 +40,26 @@ jobs:
         with:
           name: colorexp-${{ matrix.os }}-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
           path: colorexp-${{ matrix.os }}-amd64-${{ steps.project_version.outputs.version }}-${{ steps.git_commit.outputs.sha }}
+
+      # Create a GitHub release
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.version }}
+          release_name: Release ${{ env.version }}
+          draft: false
+          prerelease: false
+
+      # Upload release asset for each OS
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./colorexp-${{ matrix.os }}-amd64-${{ env.version }}-${{ env.sha }}
+          asset_name: colorexp-${{ matrix.os }}-amd64-${{ env.version }}-${{ env.sha }}
+          asset_content_type: application/octet-stream
