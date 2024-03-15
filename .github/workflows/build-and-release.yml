@@ -1,0 +1,107 @@
+name: Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      # Check out
+      - uses: actions/checkout@v4
+
+      # Extract version information
+      - name: Extract project version and hash
+        id: project_info
+        run: |
+          echo "version=$(grep 'const version =' colorexp.go | cut -d '"' -f 2)" >> $GITHUB_OUTPUT
+          echo "version_and_hash=$(grep 'const version =' colorexp.go | cut -d '"' -f 2)-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      # Prepare build
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.x
+      - name: Download dependencies
+        run: go mod tidy
+
+      # Build Linux
+      - name: Build Linux
+        run: |
+          env GOOS=linux GOARCH=amd64 go build -o colorexp colorexp.go
+          tar -czvf colorexp-linux-amd64-${{ steps.project_info.outputs.version_and_hash }}.tar.gz colorexp
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: colorexp-linux-amd64-${{ steps.project_info.outputs.version_and_hash }}.tar.gz
+          path: colorexp-linux-amd64-${{ steps.project_info.outputs.version_and_hash }}.tar.gz
+
+      # Build Darwin
+      - name: Build Darwin
+        run: |
+          env GOOS=darwin GOARCH=amd64 go build -o colorexp colorexp.go
+          chmod a+x colorexp
+          tar -czvf colorexp-darwin-amd64-${{ steps.project_info.outputs.version_and_hash }}.tar.gz colorexp
+      - name: Upload Darwin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: colorexp-darwin-amd64-${{ steps.project_info.outputs.version_and_hash }}
+          path: colorexp-darwin-amd64-${{ steps.project_info.outputs.version_and_hash }}
+
+      # Build Windows
+      - name: Build Windows
+        run: |
+          env GOOS=windows GOARCH=amd64 go build -o colorexp.exe colorexp.go
+          zip colorexp-windows-amd64-${{ steps.project_info.outputs.version_and_hash }}.zip colorexp.exe
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: colorexp-windows-amd64-${{ steps.project_info.outputs.version_and_hash }}.zip
+          path: colorexp-windows-amd64-${{ steps.project_info.outputs.version_and_hash }}.zip
+
+      # Create a GitHub release
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.project_info.outputs.version }}
+          release_name: Release ${{ steps.project_info.outputs.version }}
+          draft: false
+          prerelease: false
+
+
+      # Upload release asset for Linux
+      - name: Upload Release Asset Linux
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./colorexp-linux-amd64-${{ steps.project_info.outputs.version_and_hash }}.tar.gz
+          asset_name: colorexp-linux-amd64-${{ steps.project_info.outputs.version_and_hash }}.tar.gz
+          asset_content_type: application/octet-stream
+
+      # Upload release asset for Darwin
+      - name: Upload Release Asset Darwin
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./colorexp-darwin-amd64-${{ steps.project_info.outputs.version_and_hash }}.tar.gz
+          asset_name: colorexp-darwin-amd64-${{ steps.project_info.outputs.version_and_hash }}.tar.gz
+          asset_content_type: application/octet-stream
+
+      # Upload release asset for Windows
+      - name: Upload Release Asset Windows
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./colorexp-windows-amd64-${{ steps.project_info.outputs.version_and_hash }}.zip
+          asset_name: colorexp-windows-amd64-${{ steps.project_info.outputs.version_and_hash }}.zip
+          asset_content_type: application/octet-stream

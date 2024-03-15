@@ -1,0 +1,45 @@
+name: Update Homebrew Tap
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  update-tap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout colorexp repository at released tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Extract project version and commit hash
+        id: project_info
+        run: |
+          echo "version=$(grep 'const version =' colorexp.go | cut -d '"' -f 2)" >> $GITHUB_OUTPUT
+          echo "version_and_hash=$(grep 'const version =' colorexp.go | cut -d '"' -f 2)-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "filename=colorexp-darwin-amd64-$(grep 'const version =' colorexp.go | cut -d '"' -f 2)-$(git rev-parse --short HEAD).tar.gz" >> $GITHUB_OUTPUT
+
+      - name: Checkout homebrew-tap repository
+        uses: actions/checkout@v4
+        with:
+          repository: EugenDueck/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_PAT }}
+          path: homebrew-tap
+
+      - name: Update Formula with dynamic filename
+        run: |
+          url="https://github.com/EugenDueck/colorexp/releases/download/${{ github.event.release.tag_name }}/${{ steps.project_info.outputs.filename }}"
+          sha256=$(curl -L $url | sha256sum | cut -d ' ' -f1)
+          sed -i "s|url .*|url \"$url\"|" homebrew-tap/Formula/colorexp.rb
+          sed -i "s|sha256 .*|sha256 \"$sha256\"|" homebrew-tap/Formula/colorexp.rb
+        shell: bash
+
+      - name: Commit and push changes
+        run: |
+          cd homebrew-tap
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add Formula/colorexp.rb
+          git commit -m "Update colorexp formula to version ${{ github.event.release.tag_name }}"
+          git push
