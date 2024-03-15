@@ -8,7 +8,7 @@ import (
 	"regexp"
 )
 
-const version = "1.0.1"
+const version = "1.0.2"
 
 var foregroundColors = []string{
 	//"\033[30m", // Black
@@ -160,6 +160,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Note that the order in regexps is the reverse of the original order, to implement the "last regexp wins" logic
 	var regexps []*regexp.Regexp
 	for _, regexString := range regexStrings {
 		if fixedStrings {
@@ -173,7 +174,8 @@ func main() {
 			_, _ = fmt.Printf("Invalid regular expression: %v\n", err)
 			os.Exit(1)
 		}
-		regexps = append(regexps, re)
+		// insert at the beginning of the slice, to revert the order
+		regexps = append([]*regexp.Regexp{re}, regexps...)
 	}
 
 	var colors []string

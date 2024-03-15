@@ -4,7 +4,7 @@ something that is not easy to achieve with tools like `grep` and `less`.
 
 **Colorexp**
 - uses the Go regexp format, as documented [here](https://pkg.go.dev/regexp/syntax).
-- supports overlapping matches (the color of the first matching pattern will be used)
+- supports overlapping matches (the color for the last pattern that matches will be used)
 
 # Usage
 ```
