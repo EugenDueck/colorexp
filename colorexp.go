@@ -8,7 +8,7 @@ import (
 	"regexp"
 )
 
-const version = "1.0.4"
+const version = "1.0.5"
 
 var foregroundColors = []string{
 	//"\033[30m", // Black
@@ -91,13 +91,31 @@ func addRange(ranges []rangeWithID, newRange rangeWithID) []rangeWithID {
 	return result
 }
 
-func match(line string, regexps []*regexp.Regexp) []rangeWithID {
+func match(line string, regexps []*regexp.Regexp, varyGroupColors bool) []rangeWithID {
 	var ranges []rangeWithID
-	for colorIdx, re := range regexps {
-		matchRanges := re.FindAllStringIndex(line, -1)
+	colorIdx := 0
+	for _, re := range regexps {
+		numGroups := re.NumSubexp()
+		matchRanges := re.FindAllStringSubmatchIndex(line, -1)
+		firstGroupToColorize := min(1, numGroups)
+		groupsToColorize := numGroups + 1 - firstGroupToColorize
 		for _, matchRange := range matchRanges {
-			ranges = addRange(ranges, rangeWithID{matchRange[0], matchRange[1], colorIdx})
+			// if there is no capturing group, the full match will be colorized (group 0)
+			// if there are capturing groups, all groups but group 0 (the full match) will be colorized
+			for i := 0; i < groupsToColorize; i++ {
+				curColorIdx := colorIdx
+				if varyGroupColors {
+					curColorIdx += i
+				}
+				gIdx := (i + firstGroupToColorize) * 2
+				matchRangeStart := matchRange[gIdx]
+				matchRangeEnd := matchRange[gIdx+1]
+				if matchRangeEnd > matchRangeStart {
+					ranges = addRange(ranges, rangeWithID{matchRangeStart, matchRangeEnd, curColorIdx})
+				}
+			}
 		}
+		colorIdx += groupsToColorize
 	}
 	return ranges
 }
@@ -127,11 +145,14 @@ func printUsage() {
 
 func main() {
 	var (
-		fixedStrings bool
-		showHelp     bool
-		highlight    bool
-		ignoreCase   bool
-		showVersion  bool
+		fixedStrings       bool
+		showHelp           bool
+		highlight          bool
+		ignoreCase         bool
+		showVersion        bool
+		varyGroupColorsOn  bool
+		varyGroupColorsOff bool
+		varyGroupColors    bool
 	)
 
 	pflag.BoolVarP(&fixedStrings, "fixed-strings", "F", false, "Do not interpret regular expression metacharacters.")
@@ -139,6 +160,9 @@ func main() {
 	pflag.BoolVarP(&highlight, "highlight", "H", false, "Color by changing the background color. The default is to change the foreground color.")
 	pflag.BoolVarP(&ignoreCase, "ignore-case", "i", false, "Perform case insensitive matching.")
 	pflag.BoolVarP(&showVersion, "version", "V", false, "Display version information and exit.")
+
+	pflag.BoolVarP(&varyGroupColorsOn, "vary-group-colors-on", "G", false, "Turn on changing of colors for every capturing group. Defaults to on if exactly one pattern is given.")
+	pflag.BoolVarP(&varyGroupColorsOff, "vary-group-colors-off", "g", false, "Turn off changing of colors for every capturing group. Defaults to on if exactly one pattern is given.")
 
 	pflag.Parse()
 
@@ -155,9 +179,22 @@ func main() {
 	regexStrings := pflag.Args()
 
 	if len(regexStrings) == 0 {
-		_, _ = fmt.Println("Error: At least one pattern argument is required.")
+		_, _ = fmt.Println("Error: At least one pattern argument is required.\n")
 		printUsage()
 		os.Exit(1)
+	}
+
+	if pflag.Lookup("vary-group-colors-on").Changed {
+		if pflag.Lookup("vary-group-colors-off").Changed {
+			_, _ = fmt.Println("Error: -G/-g arguments cannot both be used at the same time.\n")
+			printUsage()
+			os.Exit(1)
+		}
+		varyGroupColors = true
+	} else if pflag.Lookup("vary-group-colors-off").Changed {
+		varyGroupColors = false
+	} else {
+		varyGroupColors = len(regexStrings) == 1
 	}
 
 	// Note that the order in regexps is the reverse of the original order, to implement the "last regexp wins" logic
@@ -174,7 +211,8 @@ func main() {
 			_, _ = fmt.Printf("Invalid regular expression: %v\n", err)
 			os.Exit(1)
 		}
-		// insert at the beginning of the slice, to revert the order
+		// insert at the beginning of the slice, to invert the order,
+		// so that the last regex takes precedence
 		regexps = append([]*regexp.Regexp{re}, regexps...)
 	}
 
@@ -191,7 +229,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := scanner.Text()
-		ranges := match(line, regexps)
+		ranges := match(line, regexps, varyGroupColors)
 		colorizedLine := colorize(line, colors, resetColor, ranges)
 		fmt.Println(colorizedLine)
 	}
