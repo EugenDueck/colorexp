@@ -8,7 +8,7 @@ import (
 	"regexp"
 )
 
-const version = "1.0.5"
+const version = "1.0.6"
 
 var foregroundColors = []string{
 	//"\033[30m", // Black
@@ -105,7 +105,7 @@ func match(line string, regexps []*regexp.Regexp, varyGroupColors bool) []rangeW
 			for i := 0; i < groupsToColorize; i++ {
 				curColorIdx := colorIdx
 				if varyGroupColors {
-					curColorIdx += i
+					curColorIdx += groupsToColorize - 1 - i
 				}
 				gIdx := (i + firstGroupToColorize) * 2
 				matchRangeStart := matchRange[gIdx]
@@ -115,19 +115,27 @@ func match(line string, regexps []*regexp.Regexp, varyGroupColors bool) []rangeW
 				}
 			}
 		}
-		colorIdx += groupsToColorize
+		if varyGroupColors {
+			colorIdx += groupsToColorize
+		} else {
+			colorIdx++
+		}
 	}
 	return ranges
 }
 
-func colorize(s string, colors []string, resetColor string, ranges []rangeWithID) string {
+func colorize(s string, colors [][]string, ranges []rangeWithID, patternColorCount int) string {
 	for i, r := range ranges {
-		color := colors[r.id%len(colors)]
-		s = insertString(s, color, r.startIndex)
-		incRanges(ranges, len(color))
+		colorIdx := patternColorCount - r.id - 1
+		for colorIdx < 0 {
+			colorIdx += len(colors)
+		}
+		color := colors[colorIdx%len(colors)]
+		s = insertString(s, color[0], r.startIndex)
+		incRanges(ranges, len(color[0]))
 		// ranges[i] was modified by incRanges, so we need to use that, not the stale r
-		s = insertString(s, resetColor, ranges[i].endIndex)
-		incRanges(ranges, len(resetColor))
+		s = insertString(s, color[1], ranges[i].endIndex)
+		incRanges(ranges, len(color[1]))
 	}
 	return s
 }
@@ -147,7 +155,8 @@ func main() {
 	var (
 		fixedStrings       bool
 		showHelp           bool
-		highlight          bool
+		noHighlight        bool
+		onlyHighlight      bool
 		ignoreCase         bool
 		showVersion        bool
 		varyGroupColorsOn  bool
@@ -156,8 +165,9 @@ func main() {
 	)
 
 	pflag.BoolVarP(&fixedStrings, "fixed-strings", "F", false, "Do not interpret regular expression metacharacters.")
-	pflag.BoolVarP(&showHelp, "help", "h", false, "Display this help and exit.")
-	pflag.BoolVarP(&highlight, "highlight", "H", false, "Color by changing the background color. The default is to change the foreground color.")
+	pflag.BoolVarP(&showHelp, "help", "", false, "Display this help and exit.")
+	pflag.BoolVarP(&noHighlight, "no-highlight", "h", false, "Do not color by changing the background color.")
+	pflag.BoolVarP(&onlyHighlight, "only-highlight", "H", false, "Only color by changing the background color.")
 	pflag.BoolVarP(&ignoreCase, "ignore-case", "i", false, "Perform case insensitive matching.")
 	pflag.BoolVarP(&showVersion, "version", "V", false, "Display version information and exit.")
 
@@ -179,14 +189,14 @@ func main() {
 	regexStrings := pflag.Args()
 
 	if len(regexStrings) == 0 {
-		_, _ = fmt.Println("Error: At least one pattern argument is required.\n")
+		_, _ = fmt.Printf("Error: At least one pattern argument is required.\n\n")
 		printUsage()
 		os.Exit(1)
 	}
 
 	if pflag.Lookup("vary-group-colors-on").Changed {
 		if pflag.Lookup("vary-group-colors-off").Changed {
-			_, _ = fmt.Println("Error: -G/-g arguments cannot both be used at the same time.\n")
+			_, _ = fmt.Printf("Error: -g/-G arguments cannot both be used at the same time.\n\n")
 			printUsage()
 			os.Exit(1)
 		}
@@ -211,26 +221,40 @@ func main() {
 			_, _ = fmt.Printf("Invalid regular expression: %v\n", err)
 			os.Exit(1)
 		}
-		// insert at the beginning of the slice, to invert the order,
+		// insert at the beginning of the slice, to reverse the order,
 		// so that the last regex takes precedence
 		regexps = append([]*regexp.Regexp{re}, regexps...)
+		//regexps = append(regexps, re)
 	}
 
-	var colors []string
-	var resetColor string
-	if highlight {
-		colors = backgroundColors
-		resetColor = resetBackgroundColor
-	} else {
-		colors = foregroundColors
-		resetColor = resetForegroundColor
+	var colors [][]string
+	if !pflag.Lookup("only-highlight").Changed {
+		for _, foreColor := range foregroundColors {
+			colors = append(colors, []string{foreColor, resetForegroundColor})
+		}
+	} else if pflag.Lookup("no-highlight").Changed {
+		_, _ = fmt.Printf("Error: -h/-H arguments cannot both be used at the same time.\n\n")
+		printUsage()
+		os.Exit(1)
+	}
+	if !pflag.Lookup("no-highlight").Changed {
+		for _, backColor := range backgroundColors {
+			colors = append(colors, []string{backColor, resetBackgroundColor})
+		}
+	}
+
+	patternColorCount := len(regexps)
+	if varyGroupColors {
+		for _, re := range regexps {
+			patternColorCount += max(0, re.NumSubexp()-1)
+		}
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := scanner.Text()
 		ranges := match(line, regexps, varyGroupColors)
-		colorizedLine := colorize(line, colors, resetColor, ranges)
+		colorizedLine := colorize(line, colors, ranges, patternColorCount)
 		fmt.Println(colorizedLine)
 	}
 

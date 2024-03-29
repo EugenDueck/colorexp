@@ -25,6 +25,10 @@ jobs:
       - name: Download dependencies
         run: go mod tidy
 
+      # Run tests
+      - name: Run tests
+        run: go test ./...
+
       # Build Linux
       - name: Build Linux
         run: |

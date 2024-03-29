@@ -86,42 +86,42 @@ func TestAddRange(t *testing.T) {
 
 func TestColorize(t *testing.T) {
 	tests := []struct {
-		name       string
-		s          string
-		colors     []string
-		resetColor string
-		ranges     []rangeWithID
-		want       string
+		name              string
+		s                 string
+		reversedColors    [][]string
+		patternColorCount int
+		ranges            []rangeWithID
+		want              string
 	}{
 		{
-			name:       "single colorization",
-			s:          "Hello, world!",
-			colors:     []string{"\033[31m"},
-			resetColor: "\033[0m",
-			ranges:     []rangeWithID{{7, 12, 0}},
-			want:       "Hello, \033[31mworld\033[0m!",
+			name:              "single colorization",
+			s:                 "Hello, world!",
+			reversedColors:    [][]string{{"\033[31m", "\033[0m"}},
+			patternColorCount: 1,
+			ranges:            []rangeWithID{{7, 12, 0}},
+			want:              "Hello, \033[31mworld\033[0m!",
 		},
 		{
-			name:       "multiple colorization",
-			s:          "Hello, beautiful world!",
-			colors:     []string{"\033[31m", "\033[32m"},
-			resetColor: "\033[0m",
-			ranges:     []rangeWithID{{7, 16, 0}, {17, 22, 1}},
-			want:       "Hello, \033[31mbeautiful\033[0m \033[32mworld\033[0m!",
+			name:              "multiple colorization",
+			s:                 "Hello, beautiful world!",
+			reversedColors:    [][]string{{"\033[32m", "\033[0m"}, {"\033[31m", "\033[0m"}},
+			patternColorCount: 2,
+			ranges:            []rangeWithID{{7, 16, 0}, {17, 22, 1}},
+			want:              "Hello, \033[31mbeautiful\033[0m \033[32mworld\033[0m!",
 		},
 		{
-			name:       "cycle colors",
-			s:          "Hello, beautiful world!",
-			colors:     []string{"\033[31m", "\033[32m"},
-			resetColor: "\033[0m",
-			ranges:     []rangeWithID{{7, 16, 0}, {17, 22, 2}},
-			want:       "Hello, \033[31mbeautiful\033[0m \033[31mworld\033[0m!",
+			name:              "cycle colors",
+			s:                 "Hello, beautiful world!",
+			reversedColors:    [][]string{{"\033[32m", "\033[0m"}, {"\033[31m", "\033[0m"}},
+			patternColorCount: 2,
+			ranges:            []rangeWithID{{7, 16, 0}, {17, 22, 2}},
+			want:              "Hello, \033[31mbeautiful\033[0m \033[31mworld\033[0m!",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := colorize(tt.s, tt.colors, tt.resetColor, tt.ranges)
+			got := colorize(tt.s, tt.reversedColors, tt.ranges, tt.patternColorCount)
 			if got != tt.want {
 				t.Errorf("colorize() = %v, want %v", got, tt.want)
 			}
