@@ -8,7 +8,7 @@ import (
 	"regexp"
 )
 
-const version = "1.0.7"
+const version = "2"
 
 var foregroundColors = []string{
 	//"\033[30m", // Black
@@ -91,7 +91,7 @@ func addRange(ranges []rangeWithID, newRange rangeWithID) []rangeWithID {
 	return result
 }
 
-func match(line string, regexps []*regexp.Regexp, varyGroupColors bool) []rangeWithID {
+func match(line string, regexps []*regexp.Regexp, varyGroupColors, fullMatchHighlight bool) []rangeWithID {
 	var ranges []rangeWithID
 	colorIdx := 0
 	for _, re := range regexps {
@@ -99,9 +99,14 @@ func match(line string, regexps []*regexp.Regexp, varyGroupColors bool) []rangeW
 		matchRanges := re.FindAllStringSubmatchIndex(line, -1)
 		firstGroupToColorize := min(1, numGroups)
 		groupsToColorize := numGroups + 1 - firstGroupToColorize
+		if fullMatchHighlight {
+			firstGroupToColorize = 0
+			groupsToColorize = 1
+		}
 		for _, matchRange := range matchRanges {
 			// if there is no capturing group, the full match will be colorized (group 0)
-			// if there are capturing groups, all groups but group 0 (the full match) will be colorized
+			// if there are capturing groups, all groups but group 0 (the full match) will be colorized, unless
+			// fullMatchHighlight == true
 			for i := 0; i < groupsToColorize; i++ {
 				curColorIdx := colorIdx
 				if varyGroupColors {
@@ -154,6 +159,7 @@ func printUsage() {
 func main() {
 	var (
 		fixedStrings       bool
+		fullMatchHighlight bool
 		showHelp           bool
 		noHighlight        bool
 		onlyHighlight      bool
@@ -165,6 +171,7 @@ func main() {
 	)
 
 	pflag.BoolVarP(&fixedStrings, "fixed-strings", "F", false, "Do not interpret regular expression metacharacters.")
+	pflag.BoolVarP(&fullMatchHighlight, "full-match-highlight", "f", false, "Highlight the entire match, even if pattern contains capturing groups.")
 	pflag.BoolVarP(&showHelp, "help", "", false, "Display this help and exit.")
 	pflag.BoolVarP(&noHighlight, "no-highlight", "h", false, "Do not color by changing the background color.")
 	pflag.BoolVarP(&onlyHighlight, "only-highlight", "H", false, "Only color by changing the background color.")
@@ -194,17 +201,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	if pflag.Lookup("vary-group-colors-on").Changed {
-		if pflag.Lookup("vary-group-colors-off").Changed {
+	varyGroupColorsOnChanged := pflag.Lookup("vary-group-colors-on").Changed
+	varyGroupColorsOffChanged := pflag.Lookup("vary-group-colors-off").Changed
+	if varyGroupColorsOnChanged {
+		if varyGroupColorsOffChanged {
 			_, _ = fmt.Printf("Error: -g/-G arguments cannot both be used at the same time.\n\n")
 			printUsage()
 			os.Exit(1)
 		}
 		varyGroupColors = true
-	} else if pflag.Lookup("vary-group-colors-off").Changed {
+	} else if varyGroupColorsOffChanged {
 		varyGroupColors = false
 	} else {
 		varyGroupColors = len(regexStrings) == 1
+	}
+
+	if fullMatchHighlight && (varyGroupColorsOnChanged || varyGroupColorsOffChanged) {
+		_, _ = fmt.Printf("Error: -f and -g/-G arguments cannot both be used at the same time.\n\n")
+		printUsage()
+		os.Exit(1)
 	}
 
 	// Note that the order in regexps is the reverse of the original order, to implement the "last regexp wins" logic
@@ -253,7 +268,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := scanner.Text()
-		ranges := match(line, regexps, varyGroupColors)
+		ranges := match(line, regexps, varyGroupColors, fullMatchHighlight)
 		colorizedLine := colorize(line, colors, ranges, patternColorCount)
 		fmt.Println(colorizedLine)
 	}
