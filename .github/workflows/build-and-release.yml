@@ -32,7 +32,7 @@ jobs:
       # Build Linux
       - name: Build Linux
         run: |
-          env GOOS=linux GOARCH=amd64 go build -o colorexp colorexp.go
+          env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o colorexp colorexp.go
           tar -czvf colorexp-linux-amd64-${{ steps.project_info.outputs.version_and_hash }}.tar.gz colorexp
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4

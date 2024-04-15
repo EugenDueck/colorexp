@@ -8,7 +8,7 @@ import (
 	"regexp"
 )
 
-const version = "1.0.6"
+const version = "1.0.7"
 
 var foregroundColors = []string{
 	//"\033[30m", // Black
