@@ -9,10 +9,11 @@ something that is not easy to achieve with tools like `grep` and `less`.
 # Usage
 ```
 Usage: colorexp [options] patterns...
+  -f, --full-match-highlight    Highlight the entire match, even if pattern contains capturing groups.
   -F, --fixed-strings           Do not interpret regular expression metacharacters.
+  -i, --ignore-case             Perform case insensitive matching.
   -h, --no-highlight            Do not color by changing the background color.
   -H, --only-highlight          Only color by changing the background color.
-  -i, --ignore-case             Perform case insensitive matching.
   -g, --vary-group-colors-off   Turn off changing of colors for every capturing group. Defaults to on if exactly one pattern is given.
   -G, --vary-group-colors-on    Turn on changing of colors for every capturing group. Defaults to on if exactly one pattern is given.
 ```
