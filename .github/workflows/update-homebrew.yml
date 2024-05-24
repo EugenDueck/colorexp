@@ -33,6 +33,7 @@ jobs:
           sha256=$(curl -L $url | sha256sum | cut -d ' ' -f1)
           sed -i "s|url .*|url \"$url\"|" homebrew-tap/Formula/colorexp.rb
           sed -i "s|sha256 .*|sha256 \"$sha256\"|" homebrew-tap/Formula/colorexp.rb
+          sed -i "s|version \".*\"|version \"${{ steps.project_info.outputs.version }}\"|" homebrew-tap/Formula/colorexp.rb
         shell: bash
 
       - name: Commit and push changes
