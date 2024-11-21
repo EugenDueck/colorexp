@@ -8,7 +8,7 @@ import (
 	"regexp"
 )
 
-const version = "2"
+const version = "2.1"
 
 var foregroundColors = []string{
 	//"\033[30m", // Black
@@ -34,6 +34,8 @@ var backgroundColors = []string{
 
 const resetForegroundColor = "\033[0m"
 const resetBackgroundColor = "\033[49m"
+
+const maxLineLength int = 1_048_576
 
 func insertString(original string, toInsert string, index int) string {
 	if index < 0 || index > len(original) {
@@ -266,6 +268,8 @@ func main() {
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
+	buf := make([]byte, maxLineLength)
+	scanner.Buffer(buf, maxLineLength)
 	for scanner.Scan() {
 		line := scanner.Text()
 		ranges := match(line, regexps, varyGroupColors, fullMatchHighlight)
