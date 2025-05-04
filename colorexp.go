@@ -8,7 +8,7 @@ import (
 	"regexp"
 )
 
-const version = "2.1"
+const version = "2.2"
 
 var foregroundColors = []string{
 	//"\033[30m", // Black
@@ -170,6 +170,7 @@ func main() {
 		varyGroupColorsOn  bool
 		varyGroupColorsOff bool
 		varyGroupColors    bool
+		onlyMatchingLines  bool
 	)
 
 	pflag.BoolVarP(&fixedStrings, "fixed-strings", "F", false, "Do not interpret regular expression metacharacters.")
@@ -182,6 +183,8 @@ func main() {
 
 	pflag.BoolVarP(&varyGroupColorsOn, "vary-group-colors-on", "G", false, "Turn on changing of colors for every capturing group. Defaults to on if exactly one pattern is given.")
 	pflag.BoolVarP(&varyGroupColorsOff, "vary-group-colors-off", "g", false, "Turn off changing of colors for every capturing group. Defaults to on if exactly one pattern is given.")
+
+	pflag.BoolVarP(&onlyMatchingLines, "only-matching-lines", "o", false, "Only print lines with matches (suppress lines without matches).")
 
 	pflag.Parse()
 
@@ -273,6 +276,9 @@ func main() {
 	for scanner.Scan() {
 		line := scanner.Text()
 		ranges := match(line, regexps, varyGroupColors, fullMatchHighlight)
+		if onlyMatchingLines && len(ranges) == 0 {
+			continue
+		}
 		colorizedLine := colorize(line, colors, ranges, patternColorCount)
 		fmt.Println(colorizedLine)
 	}

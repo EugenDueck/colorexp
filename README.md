@@ -14,6 +14,7 @@ Usage: colorexp [options] patterns...
   -i, --ignore-case             Perform case insensitive matching.
   -h, --no-highlight            Do not color by changing the background color.
   -H, --only-highlight          Only color by changing the background color.
+  -o, --only-matching-lines     Only print lines with matches (suppress lines without matches).
   -g, --vary-group-colors-off   Turn off changing of colors for every capturing group. Defaults to on if exactly one pattern is given.
   -G, --vary-group-colors-on    Turn on changing of colors for every capturing group. Defaults to on if exactly one pattern is given.
 ```
